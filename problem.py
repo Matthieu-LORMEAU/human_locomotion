@@ -6,6 +6,7 @@ from os.path import join as pjoin
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from rampwf.prediction_types.base import BasePrediction
 from rampwf.score_types import BaseScoreType
 from rampwf.workflows import Estimator
@@ -242,13 +243,30 @@ class FScoreStepDetection(BaseScoreType):
         """
         fscore_list = list()
 
+        print("List size :")
+        print(len(y_true))
+
         for (step_list_true, step_list_pred) in zip(y_true, y_pred):
             prec = _step_detection_precision(step_list_true, step_list_pred)
             rec = _step_detection_recall(step_list_true, step_list_pred)
             if prec + rec < 1e-6:
                 fscore_list.append(0.0)
             else:
-                fscore_list.append((2 * prec * rec) / (prec + rec))
+                score = (2 * prec * rec) / (prec + rec)
+                fscore_list.append(score)
+                if score < 1:
+                    ax = pd.DataFrame(np.arange(0, step_list_true[-1][1] + 20)).plot(figsize=(20, 10))
+                    line_args = {"linestyle": "--", "color": "k"}
+                    for (start, end) in step_list_true:
+                        ax.axvline(start, **line_args)
+                        ax.axvline(end, **line_args)
+                        ax.axvspan(start, end, facecolor='g', alpha=0.3)
+                        
+                    for (start, end) in step_list_pred:
+                        ax.axvline(start, **line_args)
+                        ax.axvline(end, **line_args)
+                        ax.axvspan(start, end, facecolor='r', alpha=0.3)
+                    plt.show()
 
         return np.mean(fscore_list)
 
